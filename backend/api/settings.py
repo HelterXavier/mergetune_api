@@ -29,7 +29,6 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost').split(',')
 
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,10 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     'rest_framework',
-    
-    'healthcheck'
+
+    'healthcheck',
+    'account'
 ]
 
 REST_FRAMEWORK = {
@@ -50,7 +50,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated', 
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -64,7 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -144,7 +144,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-STATICFILES_DIRS = [ BASE_DIR / "static" ]
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
