@@ -3,6 +3,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import authenticate
+from rest_framework import serializers
 
 from .models import User
 
@@ -14,7 +16,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'name', 'instruments')
+        fields = ('email', 'username', 'name', 'instruments')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get('password1')
@@ -37,12 +39,11 @@ class UserChangeForm(forms.ModelForm):
     class Meta:
         model = User
         fields = (
-            'email', 'name', 'instruments', 'password',
+            'email', 'name', 'username', 'instruments', 'password',
             'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'
         )
 
     def clean_password(self):
-        # Retorna o valor inicial do password para evitar alteração direta
         return self.initial['password']
 
 
@@ -52,9 +53,10 @@ class UserAdmin(BaseUserAdmin):
     add_form = UserCreationForm
     form = UserChangeForm
 
-    list_display = ('email', 'name', 'is_staff', 'is_superuser', 'created_at')
+    list_display = ('email', 'name', 'username', 'is_staff',
+                    'is_superuser', 'created_at')
     list_filter = ('is_staff', 'is_superuser', 'is_active')
-    readonly_fields = ('created_at',)
+    readonly_fields = ('created_at', 'last_login')
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
@@ -68,10 +70,23 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'name', 'instruments', 'password1', 'password2', 'is_active', 'is_staff', 'is_superuser'),
+            'fields': ('email', 'name', 'username', 'instruments', 'password1', 'password2', 'is_active', 'is_staff', 'is_superuser'),
         }),
     )
 
-    search_fields = ('email', 'name')
+    search_fields = ('email', 'name', 'username',)
     ordering = ('-created_at',)
     filter_horizontal = ('groups', 'user_permissions',)
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user = authenticate(
+            username=attrs['username'], password=attrs['password'])
+        if not user:
+            raise serializers.ValidationError("Credenciais inválidas")
+        attrs['user'] = user
+        return attrs

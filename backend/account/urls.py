@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AdminCreateUserView, MeView, ChangePasswordView, LogoutView
+from .views import AccountUserView,  AccountUserView, UserPasswordView,  UserPasswordView, LogoutView
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -7,13 +7,15 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView
 )
 
-
 urlpatterns = [
-    path('create-admin/', AdminCreateUserView.as_view(), name='admin_create_user'),
-    path('me/', MeView.as_view(), name='me'),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
-    path('logout/', LogoutView.as_view(), name='logout'),
+    path('/', AccountUserView.as_view(),
+         name='create_account'),
+    path('/me/', AccountUserView.as_view(), name='user_data'),
+    path('/password/', UserPasswordView.as_view(),
+         name='update_password'),
+    path('/logout/', LogoutView.as_view(), name='logout'),
+
+    path('/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 ]

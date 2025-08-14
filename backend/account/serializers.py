@@ -8,42 +8,78 @@ User = get_user_model()
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'name', 'email', 'instruments', 'created_at']
+        fields = ['id', 'name', 'username',
+                  'email', 'instruments', 'created_at']
+
+
+class MeSerializer(BaseUserSerializer):
+    name = serializers.CharField(required=False)
+    username = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+
+    class Meta(BaseUserSerializer.Meta):
+        read_only_fields = ['id', 'created_at',
+                            'is_staff', 'is_superuser', 'password']
+
+    def validate_email(self, email):
+        user = self.instance
+        if user and User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists.")
+        return email
+
+    def validate_username(self, username):
+        user = self.instance
+        if user and User.objects.filter(username__iexact=username).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError(
+                "A user with this username already exists.")
+        return username
 
 
 class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
-        read_only_fields = ['id', 'name', 'email', 'instruments', 'created_at']
+        read_only_fields = ['id', 'name', 'username',
+                            'email', 'instruments', 'created_at']
 
 
 class CreateSerializer(BaseUserSerializer):
     password = serializers.CharField(
-        write_only=True, required=True, validators=[validate_password])
+        write_only=True, required=True, validators=[validate_password]
+    )
     password2 = serializers.CharField(
-        write_only=True, required=True)
+        write_only=True, required=True
+    )
 
     class Meta(BaseUserSerializer.Meta):
+        model = User
+        fields = ["id", "name", "username", "email", "password",
+                  "password2"]
         extra_kwargs = {'password': {'write_only': True}}
 
-    def validate_email(self, value):
-        if User.objects.filter(email__iexact=value).exists():
+    def validate_email(self, email):
+        if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError(
-                "A user with this email already exists.")
-        return value
+                "A user with this email already exists."
+            )
+        return email
+
+    def validate_username(self, username):
+        if User.objects.filter(username__iexact=username).exists():
+            raise serializers.ValidationError(
+                "A user with this username already exists."
+            )
+        return username
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
+        if attrs.get("password") != attrs.get("password2"):
             raise serializers.ValidationError(
-                {'password': "The passwords do not match."})
+                {"password": "Passwords do not match"}
+            )
         return attrs
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
-        validated_data.pop('password2')
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
+        validated_data.pop("password2")
+        return User.objects.create_user(**validated_data)
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -67,4 +103,4 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
-        return user
+        return {"detail": "Password changed successfully"}

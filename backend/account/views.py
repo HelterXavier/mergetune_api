@@ -1,57 +1,72 @@
-from rest_framework import generics, permissions
-from django.contrib.auth import get_user_model
-from .serializers import UserSerializer, UserSerializer, ChangePasswordSerializer
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+# views.py
+from rest_framework import status, permissions
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+from .serializers import CreateSerializer, MeSerializer, ChangePasswordSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
 
-class AdminCreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
+class AccountUserView(APIView):
+    """
+    Unified user account view:
+        - POST    /api/account/        -> create user
+        - GET     /api/account/me/     -> get logged-in user info
+        - PUT     /api/account/me/     -> update user info
+        - PATCH   /api/account/password/ -> change password
+    """
 
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
-class MeView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user
-
-
-class ChangePasswordView(generics.UpdateAPIView):
-    serializer_class = ChangePasswordSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user
-
-    def update(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data, context={"request": request})
+    # CREATE
+    def post(self, request):
+        serializer = CreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Account created successfully."}, status=status.HTTP_201_CREATED)
+
+    # GET
+    def get(self, request):
+        serializer = MeSerializer(request.user)
+        return Response(serializer.data)
+
+    # UPDATE
+    def patch(self, request):
+        serializer = MeSerializer(
+            instance=request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
+class UserPasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Password updated successfully."})
+
+
+# LOGOUT
 class LogoutView(APIView):
-    permission_classes = (IsAuthenticated)
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.data["refresh"]
-
+        refresh_token = request.data.get("refresh")
         if not refresh_token:
-            return Response({"error": "'refresh not sent"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "'refresh' not sent"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response({"detail": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT)
-        except KeyError:
-            return Response({"error": "refresh' not sent"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
