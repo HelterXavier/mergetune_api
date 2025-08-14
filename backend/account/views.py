@@ -7,8 +7,6 @@ from .serializers import CreateSerializer, MeSerializer, ChangePasswordSerialize
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
-User = get_user_model()
-
 
 class AccountUserView(APIView):
     """
