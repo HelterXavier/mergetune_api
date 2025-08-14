@@ -1,6 +1,5 @@
 # MergeTune Backend
 
-![Python Version](https://img.shields.io/pypi/pyversions/Django)  
 Backend do projeto **MergeTune**, desenvolvido por **Helter Xavier**.
 
 Este guia vai te ajudar a configurar e executar o projeto localmente para desenvolvimento e testes.
