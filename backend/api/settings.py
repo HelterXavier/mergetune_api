@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'healthcheck',
-    'account'
+    'account',
+    'bands'
 ]
 
 REST_FRAMEWORK = {

@@ -7,6 +7,7 @@ from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.models import Group
 from .models import User
+from api.admin_utils import NoBulkActionsMixin
 from django.contrib.auth import authenticate
 from django.urls import reverse
 from django.utils.html import format_html_join
@@ -51,20 +52,25 @@ class UserChangeForm(forms.ModelForm):
 
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(NoBulkActionsMixin, BaseUserAdmin):
     model = User
     add_form = UserCreationForm
     form = UserChangeForm
 
-    list_display = ('email', 'name', 'username', 'is_staff',
+    list_display = ('email', 'name', 'username', 'user_bands', 'is_staff',
                     'is_superuser', 'created_at')
     list_filter = ()
     readonly_fields = ('created_at', 'last_login')
 
+    def user_bands(self, obj):
+        bands = obj.band_memberships.values_list(
+            'band__name', flat=True)
+        if not bands:
+            return "-"
+        return ", ".join(bands)
+
     def has_change_permission(self, request, obj=None):
-        if obj is None:
-            return True
-        return False
+        return True
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
@@ -86,6 +92,7 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('email', 'name', 'username',)
     ordering = ('-created_at',)
     filter_horizontal = ('groups', 'user_permissions',)
+    user_bands.short_description = "Bands"
 
 
 class LoginSerializer(serializers.Serializer):
@@ -108,13 +115,13 @@ class GroupReadOnly(Group):
         verbose_name_plural = "Groups View"
 
 
-class ReadOnlyGroupAdmin(BaseGroupAdmin):
+class ReadOnlyGroupAdmin(NoBulkActionsMixin, BaseGroupAdmin):
     readonly_fields = ('name', 'permissions', 'users_in_group')
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         return False
 
-    def has_change_permission(self, request):
+    def has_change_permission(self, request, obj=None):
         return False
 
     def save_model(self, request, obj, form, change):
@@ -144,7 +151,7 @@ class ReadOnlyGroupAdmin(BaseGroupAdmin):
     )
 
 
-class EditableGroupAdmin(BaseGroupAdmin):
+class EditableGroupAdmin(NoBulkActionsMixin, BaseGroupAdmin):
     filter_horizontal = ('permissions',)
 
 
