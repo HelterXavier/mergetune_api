@@ -5,8 +5,8 @@ from .models import Band, BandMembership
 class BandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Band
-        fields = ['id', 'name', 'created_at', 'created_by']
-        read_only_fields = ['id', 'created_at', 'created_by']
+        fields = ['id', 'name', 'created_by']
+        read_only_fields = ['created_by']
 
     def create(self, validated_data):
         user = self.context['request'].user

@@ -14,9 +14,7 @@ class CreateBandView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-        BandMembership.objects.create(
-            Band=band, user=self.request.user, role='admin')
+        serializer.save()
 
 
 class ListBandMembersView(generics.ListAPIView):
